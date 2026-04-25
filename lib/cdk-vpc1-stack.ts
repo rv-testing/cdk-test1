@@ -13,11 +13,16 @@ export class CdkVpc1Stack extends cdk.Stack {
       tags: [{ key: 'Name', value: 'vpc-services' }],
     });
 
-    new ec2.CfnSubnet(this, 'HubSubnet', {
+    const hubSubnet = new ec2.CfnSubnet(this, 'HubSubnet', {
       vpcId: vpc.ref,
       cidrBlock: '10.0.1.0/24',
       mapPublicIpOnLaunch: false,
       tags: [{ key: 'Name', value: 'hub' }],
+    });
+
+    // Turn on subnet-level VPC Block Public Access for internet gateways.
+    hubSubnet.addPropertyOverride('BlockPublicAccessStates', {
+      InternetGatewayBlockMode: 'block-bidirectional',
     });
 
     new ec2.CfnSubnet(this, 'SpokeSubnet', {
