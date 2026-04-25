@@ -1,0 +1,33 @@
+{
+  "name": "cdk-test1",
+  "version": "1.0.0",
+  "description": "AWS CDK TypeScript app that creates an S3 bucket",
+  "main": "bin/cdk-test1.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "cdk": "cdk",
+    "synth": "cdk synth"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rv-testing/cdk-test1.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rv-testing/cdk-test1/issues"
+  },
+  "homepage": "https://github.com/rv-testing/cdk-test1#readme",
+  "dependencies": {
+    "aws-cdk-lib": "^2.251.0",
+    "constructs": "^10.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "aws-cdk": "^2.1119.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3"
+  }
+}
