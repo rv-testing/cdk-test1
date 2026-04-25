@@ -23,6 +23,7 @@ export class CdkVpc1Stack extends cdk.Stack {
     new ec2.CfnSubnet(this, 'SpokeSubnet', {
       vpcId: vpc.ref,
       cidrBlock: '10.0.2.0/24',
+      mapPublicIpOnLaunch: true,
       tags: [{ key: 'Name', value: 'spoke' }],
     });
   }
