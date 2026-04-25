@@ -16,6 +16,7 @@ export class CdkVpc1Stack extends cdk.Stack {
     new ec2.CfnSubnet(this, 'HubSubnet', {
       vpcId: vpc.ref,
       cidrBlock: '10.0.1.0/24',
+      mapPublicIpOnLaunch: false,
       tags: [{ key: 'Name', value: 'hub' }],
     });
 
