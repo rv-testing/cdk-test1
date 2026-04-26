@@ -1,13 +1,13 @@
 import * as cdk from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
-import { CdkTest1Stack } from '../lib/cdk-s3-stack';
+import { CdkS3Stack } from '../lib/cdk-s3-stack';
 
-describe('CdkTest1Stack', () => {
+describe('CdkS3Stack', () => {
   let template: Template;
 
   beforeAll(() => {
     const app = new cdk.App();
-    const stack = new CdkTest1Stack(app, 'TestStack');
+    const stack = new CdkS3Stack(app, 'TestStack');
     template = Template.fromStack(stack);
   });
 
