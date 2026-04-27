@@ -6,30 +6,31 @@ export class CdkVpc1Stack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    const vpc = new ec2.CfnVPC(this, 'VpcServices', {
-      cidrBlock: '10.0.0.0/16',
+    const vpc = new ec2.Vpc(this, 'VpcServices', {
+      ipAddresses: ec2.IpAddresses.cidr('10.0.0.0/16'),
       enableDnsSupport: true,
       enableDnsHostnames: true,
-      tags: [{ key: 'Name', value: 'vpc-services' }],
+      vpcName: 'vpc-services',
+      maxAzs: 1,
+      natGateways: 0,
+      subnetConfiguration: [
+        {
+          name: 'hub',
+          subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
+          cidrMask: 24,
+        },
+        {
+          name: 'spoke',
+          subnetType: ec2.SubnetType.PUBLIC,
+          cidrMask: 24,
+        },
+      ],
     });
 
-    const hubSubnet = new ec2.CfnSubnet(this, 'HubSubnet', {
-      vpcId: vpc.ref,
-      cidrBlock: '10.0.1.0/24',
-      mapPublicIpOnLaunch: false,
-      tags: [{ key: 'Name', value: 'hub' }],
-    });
-
-    // Turn on subnet-level VPC Block Public Access for internet gateways.
-    hubSubnet.addPropertyOverride('BlockPublicAccessStates', {
+    // Turn on subnet-level VPC Block Public Access for internet gateways (L1 escape hatch).
+    const hubCfnSubnet = vpc.isolatedSubnets[0].node.defaultChild as ec2.CfnSubnet;
+    hubCfnSubnet.addPropertyOverride('BlockPublicAccessStates', {
       InternetGatewayBlockMode: 'block-bidirectional',
-    });
-
-    new ec2.CfnSubnet(this, 'SpokeSubnet', {
-      vpcId: vpc.ref,
-      cidrBlock: '10.0.2.0/24',
-      mapPublicIpOnLaunch: true,
-      tags: [{ key: 'Name', value: 'spoke' }],
     });
   }
 }
