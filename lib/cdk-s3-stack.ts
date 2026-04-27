@@ -7,13 +7,18 @@ export class CdkS3Stack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    new s3.Bucket(this, 'My08Bucket31', {
+    const bucket = new s3.Bucket(this, 'My08Bucket31', {
       versioned: true,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       encryption: s3.BucketEncryption.S3_MANAGED,
       enforceSSL: true,
       removalPolicy: RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
+    });
+
+    new cdk.CfnOutput(this, 'BucketName', {
+      value: bucket.bucketName,
+      description: 'Name of the S3 bucket',
     });
   }
 }
