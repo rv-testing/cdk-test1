@@ -15,9 +15,7 @@ describe('CdkS3Stack', () => {
     template.hasResourceProperties('AWS::S3::Bucket', {
       VersioningConfiguration: { Status: 'Enabled' },
     });
-  });
-
-# test/cdk-test1-stack.test.ts contains unit tests for the CdkS3Stack. It uses the AWS CDK assertions library to verify that the stack creates an S3 bucket with the expected properties, such as versioning enabled, public access blocking, S3-managed encryption, and SSL enforcement. The tests also check that exactly one S3 bucket is created in the stack.  
+  }); 
 
   test('S3 bucket blocks all public access', () => {
     template.hasResourceProperties('AWS::S3::Bucket', {
