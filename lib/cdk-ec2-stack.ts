@@ -21,6 +21,7 @@ export class CdkEc2Stack extends cdk.Stack {
       description: 'Security group for EC2 instance',
       allowAllOutbound: true,
     });
+    securityGroup.applyRemovalPolicy(cdk.RemovalPolicy.DESTROY);
 
     // Create an EC2 instance in the hub subnet
     const instance = new ec2.Instance(this, 'EC2Instance', {
@@ -33,6 +34,7 @@ export class CdkEc2Stack extends cdk.Stack {
       securityGroup,
       keyName: 'my-key-pair', // Update with your key pair name if needed
     });
+    instance.applyRemovalPolicy(cdk.RemovalPolicy.DESTROY);
 
     new cdk.CfnOutput(this, 'InstanceId', {
       value: instance.instanceId,
