@@ -5,10 +5,12 @@ import { CdkVpc1Stack } from '../lib/cdk-vpc1-stack';
 
 const app = new cdk.App();
 
-new CdkS3Stack(app, 'CdkS3Stack', {
+const vpcStack = new CdkVpc1Stack(app, 'CdkVpc1Stack', {
   env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: 'ca-central-1' },
 });
 
-new CdkVpc1Stack(app, 'CdkVpc1Stack', {
+const s3Stack = new CdkS3Stack(app, 'CdkS3Stack', {
   env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: 'ca-central-1' },
 });
+
+s3Stack.addDependency(vpcStack);

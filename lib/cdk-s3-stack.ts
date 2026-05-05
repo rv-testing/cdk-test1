@@ -8,6 +8,7 @@ export class CdkS3Stack extends cdk.Stack {
     super(scope, id, props);
 
     const bucket = new s3.Bucket(this, 'My08Bucket31', {
+      bucketName: 'my-08-bucket-31',
       versioned: true,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       encryption: s3.BucketEncryption.S3_MANAGED,
