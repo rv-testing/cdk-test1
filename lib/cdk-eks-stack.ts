@@ -5,7 +5,7 @@ import * as eks from "aws-cdk-lib/aws-eks";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as apigw from "aws-cdk-lib/aws-apigateway";
 import * as lambda from "aws-cdk-lib/aws-lambda";
-import { KubernetesManifest } from "aws-cdk-lib/aws-eks";
+import { KubectlV31Layer } from "@aws-cdk/lambda-layer-kubectl-v31";
 
 interface CdkEksStackProps extends cdk.StackProps {
   vpc: ec2.IVpc;
@@ -16,6 +16,8 @@ export class CdkEksStack extends cdk.Stack {
 
   constructor(scope: Construct, id: string, props: CdkEksStackProps) {
     super(scope, id, props);
+
+    const kubectlLayer = new KubectlV31Layer(this, "KubectlLayer");
 
     // Create IAM role for EKS cluster
     const clusterRole = new iam.Role(this, "EksClusterRole", {
@@ -39,15 +41,14 @@ export class CdkEksStack extends cdk.Stack {
       ],
       defaultCapacity: 0,
       clusterName: "cdk-eks-cluster",
-      logging: {
-        clusterLogging: [
-          eks.ClusterLoggingTypes.API,
-          eks.ClusterLoggingTypes.AUDIT,
-          eks.ClusterLoggingTypes.AUTHENTICATOR,
-          eks.ClusterLoggingTypes.CONTROLLER_MANAGER,
-          eks.ClusterLoggingTypes.SCHEDULER,
-        ],
-      },
+      kubectlLayer,
+      clusterLogging: [
+        eks.ClusterLoggingTypes.API,
+        eks.ClusterLoggingTypes.AUDIT,
+        eks.ClusterLoggingTypes.AUTHENTICATOR,
+        eks.ClusterLoggingTypes.CONTROLLER_MANAGER,
+        eks.ClusterLoggingTypes.SCHEDULER,
+      ],
     });
 
     // Add managed node group
@@ -57,14 +58,12 @@ export class CdkEksStack extends cdk.Stack {
         ec2.InstanceClass.T3,
         ec2.InstanceSize.MEDIUM
       ),
-      machineImage: new eks.EksOptimizedImage({
-        kubernetes: eks.KubernetesVersion.V1_31,
-      }),
+      machineImageType: eks.MachineImageType.AMAZON_LINUX_2,
       spotPrice: "0.0728",
     });
 
     // Install AWS Load Balancer Controller for Ingress support
-    const awsLoadBalancerControllerChart = this.cluster.addHelmChart(
+    this.cluster.addHelmChart(
       "AwsLoadBalancerController",
       {
         chart: "aws-load-balancer-controller",
@@ -74,32 +73,6 @@ export class CdkEksStack extends cdk.Stack {
           clusterName: this.cluster.clusterName,
           serviceAccount: {
             create: true,
-            annotations: {
-              "eks.amazonaws.com/role-arn": new iam.Role(
-                this,
-                "AlbControllerRole",
-                {
-                  assumedBy: new iam.PrincipalWithCondition(
-                    new iam.ServicePrincipal(
-                      `eks.${this.region}.amazonaws.com`
-                    ),
-                    {
-                      StringEquals: {
-                        [`oidc.eks.${this.region}.amazonaws.com/id/${this.cluster.openIdConnectProvider?.openIdConnectProviderIssuer.split(
-                          "/"
-                        ).pop()}:sub`]:
-                          "system:serviceaccount:kube-system:aws-load-balancer-controller",
-                      },
-                    }
-                  ),
-                  managedPolicies: [
-                    iam.ManagedPolicy.fromAwsManagedPolicyName(
-                      "AmazonEKS_CNI_Policy"
-                    ),
-                  ],
-                }
-              ).roleArn,
-            },
           },
           enableWafv2: false,
           enableShield: false,
@@ -274,7 +247,7 @@ export class CdkEksStack extends cdk.Stack {
     });
 
     new cdk.CfnOutput(this, "ClusterEndpoint", {
-      value: this.cluster.clusterApiEndpoint,
+      value: this.cluster.clusterEndpoint,
       description: "EKS Cluster Endpoint",
     });
 
