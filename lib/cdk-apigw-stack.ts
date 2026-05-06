@@ -2,7 +2,11 @@ import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as nodejs from "aws-cdk-lib/aws-lambda-nodejs";
+import * as logs from "aws-cdk-lib/aws-logs";
+import * as cr from "aws-cdk-lib/custom-resources";
 import * as apigw from "aws-cdk-lib/aws-apigateway";
+import * as path from "path";
 
 export class CdkApiGwStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -17,59 +21,32 @@ export class CdkApiGwStack extends cdk.Stack {
     });
 
     // L3: Lambda function (inline handler for simplicity)
-    const handler = new lambda.Function(this, "ItemsHandler", {
+    const handler = new nodejs.NodejsFunction(this, "ItemsHandler", {
+      entry: path.join(__dirname, "../lambda/items-handler.ts"),
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: "index.handler",
-      code: lambda.Code.fromInline(`
-        const AWS = require("aws-sdk");
-        const client = new AWS.DynamoDB.DocumentClient();
-
-        exports.handler = async (event) => {
-          try {
-            const table = process.env.TABLE_NAME;
-            const method = event.httpMethod;
-            const id = event.pathParameters?.id;
-
-            if (method === "GET" && id) {
-              const result = await client
-                .get({ TableName: table, Key: { id } })
-                .promise();
-              return { statusCode: 200, body: JSON.stringify(result.Item ?? {}) };
-            }
-
-            if (method === "GET") {
-              const result = await client.scan({ TableName: table }).promise();
-              return { statusCode: 200, body: JSON.stringify(result.Items ?? []) };
-            }
-
-            if (method === "POST") {
-              const body = JSON.parse(event.body ?? "{}");
-              if (!body.id) {
-                return {
-                  statusCode: 400,
-                  body: JSON.stringify({ message: "Body must include id" }),
-                };
-              }
-              await client.put({ TableName: table, Item: body }).promise();
-              return { statusCode: 201, body: JSON.stringify(body) };
-            }
-
-            return { statusCode: 405, body: "Method Not Allowed" };
-          } catch (error) {
-            return {
-              statusCode: 500,
-              body: JSON.stringify({
-                message: "Internal server error",
-                error: error.message,
-              }),
-            };
-          }
-        };
-      `),
+      logRetention: logs.RetentionDays.ONE_DAY,
+      logRetentionRetryOptions: { maxRetries: 3 },
       environment: {
         TABLE_NAME: table.tableName,
       },
     });
+
+    // Ensure log group is deleted on stack destroy via a custom resource
+    const logGroupName = `/aws/lambda/${handler.functionName}`;
+    const deleteLogGroup = new cr.AwsCustomResource(this, "DeleteLogGroupOnDestroy", {
+      onDelete: {
+        service: "CloudWatchLogs",
+        action: "deleteLogGroup",
+        parameters: { logGroupName },
+        physicalResourceId: cr.PhysicalResourceId.of(logGroupName),
+        ignoreErrorCodesMatching: "ResourceNotFoundException",
+      },
+      policy: cr.AwsCustomResourcePolicy.fromSdkCalls({
+        resources: cr.AwsCustomResourcePolicy.ANY_RESOURCE,
+      }),
+    });
+    deleteLogGroup.node.addDependency(handler);
 
     // Grant Lambda read/write access to the table
     table.grantReadWriteData(handler);

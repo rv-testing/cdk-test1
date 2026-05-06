@@ -5,6 +5,7 @@ import * as eks from "aws-cdk-lib/aws-eks";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as apigw from "aws-cdk-lib/aws-apigateway";
 import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as logs from "aws-cdk-lib/aws-logs";
 import { KubectlV31Layer } from "@aws-cdk/lambda-layer-kubectl-v31";
 
 interface CdkEksStackProps extends cdk.StackProps {
@@ -42,6 +43,7 @@ export class CdkEksStack extends cdk.Stack {
       defaultCapacity: 0,
       clusterName: "cdk-eks-cluster",
       kubectlLayer,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
       clusterLogging: [
         eks.ClusterLoggingTypes.API,
         eks.ClusterLoggingTypes.AUDIT,
@@ -232,6 +234,12 @@ export class CdkEksStack extends cdk.Stack {
           };
         };
       `),
+    });
+
+    new logs.LogGroup(this, "NginxProxyLambdaLogGroup", {
+      logGroupName: `/aws/lambda/${nginxProxyLambda.functionName}`,
+      retention: logs.RetentionDays.ONE_DAY,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     const nginxResource = api.root.addResource("nginx");
