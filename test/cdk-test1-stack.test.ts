@@ -3,6 +3,7 @@ import { Match, Template } from "aws-cdk-lib/assertions";
 import { CdkS3Stack } from "../lib/cdk-s3-stack";
 import { CdkVpc1Stack } from "../lib/cdk-vpc1-stack";
 import { CdkEc2Stack } from "../lib/cdk-ec2-stack";
+import { CdkApiGwStack } from "../lib/cdk-apigw-stack";
 
 describe("CdkS3Stack", () => {
   let template: Template;
@@ -154,6 +155,69 @@ describe("CdkEc2Stack", () => {
   test("outputs the instance private IP", () => {
     template.hasOutput("InstancePrivateIp", {
       Description: "EC2 Instance Private IP",
+    });
+  });
+});
+
+describe("CdkApiGwStack", () => {
+  let template: Template;
+
+  beforeAll(() => {
+    const app = new cdk.App();
+    const stack = new CdkApiGwStack(app, "TestApiGwStack");
+    template = Template.fromStack(stack);
+  });
+
+  test("creates a DynamoDB table with on-demand billing", () => {
+    template.hasResourceProperties("AWS::DynamoDB::GlobalTable", {
+      TableName: "items-table",
+      BillingMode: "PAY_PER_REQUEST",
+      KeySchema: Match.arrayWith([
+        Match.objectLike({ AttributeName: "id", KeyType: "HASH" }),
+      ]),
+    });
+  });
+
+  test("creates exactly one DynamoDB table", () => {
+    template.resourceCountIs("AWS::DynamoDB::GlobalTable", 1);
+  });
+
+  test("creates a Lambda function with Node.js 22 runtime", () => {
+    template.hasResourceProperties("AWS::Lambda::Function", {
+      Runtime: "nodejs22.x",
+      Handler: "index.handler",
+    });
+  });
+
+  test("Lambda function has TABLE_NAME environment variable", () => {
+    template.hasResourceProperties("AWS::Lambda::Function", {
+      Environment: {
+        Variables: Match.objectLike({
+          TABLE_NAME: Match.anyValue(),
+        }),
+      },
+    });
+  });
+
+  test("creates a REST API Gateway", () => {
+    template.resourceCountIs("AWS::ApiGateway::RestApi", 1);
+  });
+
+  test("API Gateway has a deployment stage named v1", () => {
+    template.hasResourceProperties("AWS::ApiGateway::Stage", {
+      StageName: "v1",
+    });
+  });
+
+  test("outputs the API Gateway URL", () => {
+    template.hasOutput("ApiUrl", {
+      Description: "API Gateway URL",
+    });
+  });
+
+  test("outputs the DynamoDB table name", () => {
+    template.hasOutput("TableName", {
+      Description: "DynamoDB Table Name",
     });
   });
 });
