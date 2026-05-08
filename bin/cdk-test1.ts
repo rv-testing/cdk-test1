@@ -5,6 +5,7 @@ import { CdkVpc1Stack } from "../lib/cdk-vpc1-stack";
 import { CdkEc2Stack } from "../lib/cdk-ec2-stack";
 import { CdkApiGwStack } from "../lib/cdk-apigw-stack";
 import { CdkEksStack } from "../lib/cdk-eks-stack";
+import { FargateStack } from "../lib/fargate-stack";
 
 const app = new cdk.App();
 
@@ -34,3 +35,7 @@ const eksStack = new CdkEksStack(app, "CdkEksStack", {
 });
 
 eksStack.addDependency(vpcStack);
+
+new FargateStack(app, "FargateStack", {
+  env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: "ca-central-1" },
+});
