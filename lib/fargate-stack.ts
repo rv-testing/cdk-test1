@@ -3,12 +3,17 @@ import { Construct } from 'constructs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs_patterns from 'aws-cdk-lib/aws-ecs-patterns';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
+import * as logs from 'aws-cdk-lib/aws-logs';
 
 export class FargateStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
     const vpc = new ec2.Vpc(this, 'Vpc', { maxAzs: 2 });
+
+    const webLogGroup = new logs.LogGroup(this, 'WebLogGroup', {
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
 
     const fargateService = new ecs_patterns.ApplicationLoadBalancedFargateService(this, 'Web', {
       vpc,
@@ -18,6 +23,10 @@ export class FargateStack extends cdk.Stack {
       taskImageOptions: {
         image: ecs.ContainerImage.fromRegistry('public.ecr.aws/nginx/nginx:latest'),
         containerPort: 80,
+        logDriver: ecs.LogDrivers.awsLogs({
+          streamPrefix: 'Web',
+          logGroup: webLogGroup,
+        }),
       },
       publicLoadBalancer: true,
     });
