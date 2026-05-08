@@ -10,7 +10,7 @@ export class FargateStack extends cdk.Stack {
 
     const vpc = new ec2.Vpc(this, 'Vpc', { maxAzs: 2 });
 
-    new ecs_patterns.ApplicationLoadBalancedFargateService(this, 'Web', {
+    const fargateService = new ecs_patterns.ApplicationLoadBalancedFargateService(this, 'Web', {
       vpc,
       cpu: 256,
       memoryLimitMiB: 512,
@@ -20,6 +20,11 @@ export class FargateStack extends cdk.Stack {
         containerPort: 80,
       },
       publicLoadBalancer: true,
+    });
+
+    new cdk.CfnOutput(this, 'FargateEndpoint', {
+      value: `http://${fargateService.loadBalancer.loadBalancerDnsName}`,
+      description: 'Public URL of the Fargate service load balancer',
     });
   }
 }

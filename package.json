@@ -36,6 +36,7 @@
   },
   "homepage": "https://github.com/rv-testing/cdk-test1#readme",
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.908.0",
     "@aws-cdk/lambda-layer-kubectl-v31": "^2.1.0",
     "aws-cdk-lib": "^2.252.0",
     "constructs": "^10.6.0"
